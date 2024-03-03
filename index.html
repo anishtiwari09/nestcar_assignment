@@ -55,12 +55,16 @@
         width: 100%;
         overflow: hidden;
       }
+
       .tab_headers {
         margin-bottom: 10px;
       }
       .open_tab_content iframe {
         display: block;
         margin-top: 10px;
+      }
+      .tab_container.active {
+        border: 1px solid black;
       }
     </style>
   </head>
@@ -81,11 +85,26 @@
         currentSelectedIndex: -1,
         tab: [],
       };
+      function addAndRemoveActiveClass(id) {
+        console.log(id);
+        $(".open_tabs")
+          .find(".active")
+          .each(function () {
+            $(this).removeClass("active");
+          });
+        if (id) $(id).addClass("active");
+      }
       function addIframe(activeTab) {
-        let value = activeTab.url;
-        console.log(activeTab.url, activeTab);
+        let value = activeTab?.url;
+        console.log(
+          value,
+          activeTab,
+          $(`.open_tab_content #input_${activeTab.id}`),
+          `.open_tab_content #input_${activeTab.id}`
+        );
         let iframe = $(".open_tab_content iframe");
-        $(`.open_tab_content #input_${activeTab.id}`).val(activeTab?.url);
+        $(`.open_tab_content .input_url`).val(value);
+        $(`.open_tab_content .input_url`).attr("id", `input_${activeTab.id}`);
 
         if (!activeTab?.isOpenIframe) {
           $(".open_tab_content iframe").remove();
@@ -102,6 +121,7 @@
         iframe.attr("src", value);
       }
       function handleSwitchTab(id) {
+        console.log("handleswitch tab");
         let selectedObj = "";
         const { tab } = obj;
         for (let item of tab) {
@@ -110,7 +130,7 @@
             break;
           }
         }
-        console.log({ selectedObj });
+        addAndRemoveActiveClass(`#tab_button_container${id}`);
         obj.selectedActiveTabId = selectedObj.id;
         addIframe(selectedObj);
         console.log("after iframe");
@@ -120,21 +140,26 @@
         console.log("closed");
         let { tab } = obj;
         obj.tab = tab.filter(({ id: itemId }) => itemId != id);
-        console.log(`#tab_button_container${id}`);
         $(`#tab_button_container${id}`).remove();
-        console.log(obj.tab);
         if (obj.tab.length) {
-          let n = obj.tab.length - 1;
-          obj.tab.selectedActiveTabId = obj.tab[n - 1];
+          let n = obj.tab.length;
+          obj.selectedActiveTabId = obj.tab[n - 1].id;
           addIframe(obj.tab[n - 1]);
         } else {
           obj.selectedActiveTabId = -1;
           $(".open_tab_content").html("");
           console.log("working");
         }
+        if (obj.selectedActiveTabId != -1) {
+          addAndRemoveActiveClass(
+            `#tab_button_container${obj.selectedActiveTabId}`
+          );
+        } else {
+          addAndRemoveActiveClass("");
+        }
       }
       function addOpenTabInHtml(activeTab) {
-        let str = `<input type="text" id="input_${activeTab.id}" placeholder="Enter url "/>`;
+        let str = `<input type="text" id="input_${activeTab.id}" placeholder="Enter url " class="input_url"/>`;
         let tabButton = `<div onClick="handleSwitchTab(${
           activeTab.id
         })" id="tab_button_container${activeTab.id}" class="tab_container">
@@ -145,6 +170,7 @@
             </div>`;
         $(".open_tabs").append(tabButton);
         $(".open_tab_content").html(str);
+        addAndRemoveActiveClass(`#tab_button_container${activeTab.id}`);
         $(`.open_tab_content #input_${activeTab.id}`).on("keypress", (e) => {
           if (e.key === "Enter") {
             activeTab.url = $(`.open_tab_content #input_${activeTab.id}`).val();
